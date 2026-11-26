@@ -1,0 +1,11 @@
+#!/bin/bash
+# tidy: keep one page on the stage (its front tab), close other toolkit pages in that window, clear scratch.
+# Only the stage window is looked at. With the stage off, Safari is not touched.
+D="$(cd "$(dirname "$0")" && pwd)"
+. "$D/stage.sh"
+N=0
+[ -n "$(stage_id)" ] && N=$(stage_close keep)
+rm -f /tmp/p[0-9].html /tmp/predigest-*.html /tmp/pd-says.txt /tmp/pd-cal*.aiff /tmp/pd-voice.aiff 2>/dev/null
+rm -rf /tmp/pd3 /tmp/pdship 2>/dev/null
+echo "$(date '+%F %T') {\"mode\":\"tidy\",\"closed\":${N:-0}}" >> "$D/runs.jsonl"
+echo "closed ${N:-0}"

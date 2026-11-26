@@ -1,0 +1,77 @@
+#!/bin/bash
+[ -n "$PD_QUIET" ] && say(){ :; }
+# behold: find a document, open it as-is in Safari, frame its first chart, speak its headline.
+#   behold coffee report      (searches ~/Downloads by file name and page title)
+#   behold ~/Downloads/x.html (exact path)
+# Then steer with: go next | back | -2 | 3 | <words>
+D="$(cd "$(dirname "$0")" && pwd)"; A="$*"
+. "$D/stage.sh"
+ms(){ perl -MTime::HiRes=time -e 'printf "%d", time*1000'; }
+t0=$(ms)
+if [ -f "$A" ]; then F="$A"; else
+  # A document must match more than half of the meaningful words asked for; otherwise open nothing.
+  W=""; NW=0
+  for w in $(printf '%s' "$A" | tr 'A-Z' 'a-z' | tr -cs 'a-z0-9' ' '); do
+    case " the a an report document doc file page behold show me my open this that for of on about please html htm " in
+      *" $w "*) ;; *) W="$W $w"; NW=$((NW+1));;
+    esac
+  done
+  best=""; bs=0; bt=0
+  for f in "$HOME"/Downloads/*.html "$HOME"/Downloads/*.htm "$D"/*report*.html; do
+    [ -f "$f" ] || continue
+    n=$(basename "$f" | tr 'A-Z' 'a-z'); t=$(head -c 4000 "$f" | grep -o '<title>[^<]*' | tr 'A-Z' 'a-z'); t=${t#<title>}; s=0
+    for w in $W; do case "$n $t" in *"$w"*) s=$((s+1));; esac; done
+    [ $((s*2)) -gt $NW ] || continue
+    m=$(stat -f %m "$f")
+    if [ $s -gt $bs ] || { [ $s -eq $bs ] && [ $m -gt $bt ]; }; then bs=$s; bt=$m; best="$f"; fi
+  done; F="$best"
+fi
+[ -z "$F" ] && { echo "no document found for: $A"; exit 1; }
+killall say >/dev/null 2>&1
+WID=$(stage_id)
+if [ -z "$WID" ]; then   # stage off or gone: voice only
+  S=$(headlines "$F" | head -1)
+  echo "$F|0" > "$D/.last"
+  [ -n "$S" ] && ( say -v Daniel -r 185 "$S" >/dev/null 2>&1 & )
+  echo "$(date '+%F %T') {\"mode\":\"behold\",\"doc\":\"$(basename "$F")\",\"voice_only\":true}" >> "$D/runs.jsonl"
+  echo "$(basename "$F"): stage is off, voice only: $S"
+  exit 0
+fi
+TOK=$(ms)
+R=$(osascript - "file://$F?pdk=$TOK" "$TOK" "$(cat "$D/nav.js")" "$WID" <<'EOS'
+on run argv
+  set wid to (item 4 of argv) as integer
+  tell application "Safari"
+    activate
+    set URL of current tab of window id wid to (item 1 of argv)
+    set index of window id wid to 1
+  end tell
+  set ok to "n"
+  repeat 150 times
+    try
+      tell application "Safari" to set ok to do JavaScript "(location.search.indexOf('" & (item 2 of argv) & "')>=0&&document.readyState=='complete')?'y':'n'" in current tab of window id wid
+    end try
+    if ok is "y" then exit repeat
+    delay 0.02
+  end repeat
+  tell application "Safari"
+    set t to current tab of window id wid
+    do JavaScript (item 3 of argv) in t
+    return do JavaScript "(function(){if(!F.length)return '0|0|';var i=pdto(0);return (i+1)+'|'+F.length+'|'+(F[i].getAttribute('data-say')||'');})()" in t
+  end tell
+end run
+EOS
+)
+t1=$(ms)
+N="${R%%|*}"; REST="${R#*|}"; C="${REST%%|*}"; S="${REST#*|}"
+echo "$F|0" > "$D/.last"
+[ -n "$S" ] && ( say -v Daniel -r 185 "$S" >/dev/null 2>&1 & )
+echo "$(date '+%F %T') {\"mode\":\"behold\",\"doc\":\"$(basename "$F")\",\"charts\":${C:-0},\"first_chart_ms\":$((t1-t0))}" >> "$D/runs.jsonl"
+# Automatic calibration after every move (background, adds no wait): framing numbers, then the voice model.
+( sleep 0.65
+  M=$(osascript -e 'tell application "Safari" to do JavaScript "pdmeasure()" in current tab of window id '"$WID"  2>/dev/null)
+  echo "$(date '+%F %T') {\"mode\":\"frame-cal\",\"m\":${M:-null}}" >> "$D/runs.jsonl"
+  if [ -n "$S" ]; then say -v Daniel -r 185 -o /tmp/pd-cal2.aiff "$S" && A=$(afinfo /tmp/pd-cal2.aiff | awk '/estimated duration/{print $3}') \
+    && echo "$(date '+%F %T') $(perl "$D/voice.pl" cal "$S" "$A")" >> "$D/runs.jsonl"; fi ) >/dev/null 2>&1 &
+echo "$(basename "$F"): chart $N of $C, $((t1-t0)) ms: $S"
+"$D/tidy" >/dev/null 2>&1 &

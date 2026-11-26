@@ -1,0 +1,60 @@
+#!/bin/bash
+# presto: toggle the predigestation stage.
+#   on:  bring one stage to the front, fill the screen, keep the Mac awake, say "Stage on"
+#   off: say "Stage off", close every stage, let the Mac sleep, clear scratch, return focus to Claude
+D="$(cd "$(dirname "$0")" && pwd)"; F="$D/.presto_on"
+. "$D/stage.sh"
+if [ ! -f "$F" ]; then
+  WID=$(osascript - "file://$D/stage.html" "$D/.screen" <<'EOS' 2>/dev/null
+on run argv
+  set screenFile to item 2 of argv
+  try
+    set sb to paragraphs of (do shell script "cat " & quoted form of screenFile)
+    set sb to {(item 1 of sb) as integer, (item 2 of sb) as integer, (item 3 of sb) as integer, (item 4 of sb) as integer}
+  on error
+    -- Finder can stall (for example on a permission prompt): wait 5 seconds, then use a default size.
+    try
+      with timeout of 5 seconds
+        tell application "Finder" to set sb to bounds of window of desktop
+      end timeout
+      do shell script "printf '%s\\n' " & (item 1 of sb) & " " & (item 2 of sb) & " " & (item 3 of sb) & " " & (item 4 of sb) & " > " & quoted form of screenFile
+    on error
+      set sb to {0, 0, 1440, 900}
+    end try
+  end try
+  tell application "Safari"
+    activate
+    make new document with properties {URL:(item 1 of argv)}
+    set wid to id of front window
+    set bounds of window id wid to sb
+    return wid
+  end tell
+end run
+EOS
+)
+  [ -n "$WID" ] || { echo "could not open the stage"; exit 1; }
+  echo "$WID" > "$STAGE_FILE"
+  touch "$F"
+  caffeinate -dimsu -t 10800 >/dev/null 2>&1 & echo $! > "$D/.caffeinate.pid"
+  echo "$(date '+%F %T') {\"mode\":\"presto\",\"state\":\"on\"}" >> "$D/runs.jsonl"
+  echo on
+else
+  # Sign-off seeded from "Stage off", then chosen from context: what was shown this session, and the time of day.
+  ON_AT=$(grep '"state":"on"' "$D/runs.jsonl" | tail -1 | cut -c1-19)
+  DOC=$(awk -v t="$ON_AT" 'substr($0,1,19)>=t' "$D/runs.jsonl" | grep '"mode":"behold"' | tail -1 | sed -E 's/.*"doc":"([^"]*)".*/\1/; s/\.html?$//; s/[-_]+/ /g')
+  H=$(date +%H); H=${H#0}
+  if   [ "$H" -ge 22 ] || [ "$H" -lt 5 ]; then T="Good night."
+  elif [ "$H" -lt 12 ]; then T="Have a good morning."
+  elif [ "$H" -lt 18 ]; then T="Enjoy the afternoon."
+  else T="Have a good evening."; fi
+  LINE="$T"; [ -n "$DOC" ] && LINE="That was the $DOC. $T"
+  "$D/speak" "$LINE" >/dev/null
+  rm -f "$F"
+  [ -f "$D/.caffeinate.pid" ] && kill "$(cat "$D/.caffeinate.pid")" 2>/dev/null; rm -f "$D/.caffeinate.pid"
+  N=$(stage_close all)
+  rm -f "$STAGE_FILE"
+  osascript -e 'tell application "Claude" to activate' >/dev/null 2>&1
+  rm -f /tmp/pd-* /tmp/predigest-* /tmp/p[0-9].html 2>/dev/null
+  echo "$(date '+%F %T') {\"mode\":\"presto\",\"state\":\"off\",\"closed\":${N:-0}}" >> "$D/runs.jsonl"
+  echo "off, closed ${N:-0}: $LINE"
+fi

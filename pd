@@ -1,0 +1,41 @@
+#!/bin/bash
+# pd: put something on the predigest stage, fast.
+#   pd "words to say"                      -> word flash + voice
+#   pd "headline to say" "c=line&s=...&..." -> chart + voice (spec goes in the URL hash)
+# Draws only on the stage window; with the stage off it just speaks. Logs timing to runs.jsonl
+D="$(cd "$(dirname "$0")" && pwd)"; STAGE="$D/stage2.html"
+. "$D/stage.sh"
+ms(){ perl -MTime::HiRes=time -e 'printf "%d", time*1000'; }
+t0=$(ms)
+SAY="$1"; SPEC="$2"
+enc(){ perl -pe 's/([^A-Za-z0-9_.~,;=&|\-+:])/sprintf("%%%02X",ord($1))/ge'; }
+if [ -n "$SPEC" ]; then
+  HASH="m=c&$(printf '%s' "$SPEC" | enc)"; T=$(( $(ms) + 150 ))
+else
+  T=$(( $(ms) + 250 )); N=$(printf '%s' "$SAY" | wc -w | tr -d ' ')
+  DUR=$(perl -e "printf '%.2f', $N*0.33+0.5")
+  HASH="m=w&t=$T&d=$DUR&w=$(printf '%s' "$SAY" | enc)"
+fi
+URL="file://$STAGE#$HASH"
+WID=$(stage_id)
+if [ -n "$WID" ]; then
+osascript - "$URL" "$WID" <<'EOF' >/dev/null
+on run argv
+  tell application "Safari"
+    set wid to (item 2 of argv) as integer
+    set URL of current tab of window id wid to (item 1 of argv)
+    set index of window id wid to 1
+    activate
+  end tell
+end run
+EOF
+else
+  T=$(ms)
+fi
+t1=$(ms)
+if [ -n "$SAY" ]; then
+  ( perl -MTime::HiRes=time,sleep -e "\$d=$T/1000-time; sleep(\$d) if \$d>0"; say -v Daniel -r 185 "$SAY" ) >/dev/null 2>&1 &
+fi
+MODE=$([ -n "$SPEC" ] && echo chart || echo words)
+echo "$(date '+%F %T') {\"mode\":\"$MODE\",\"screen_ms\":$((t1-t0)),\"spec_chars\":${#SPEC},\"say\":\"${SAY//\"/}\"}" >> "$D/runs.jsonl"
+echo "{\"mode\":\"$MODE\",\"screen_ms\":$((t1-t0)),\"spec_chars\":${#SPEC}}"

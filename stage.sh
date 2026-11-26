@@ -1,0 +1,57 @@
+# stage.sh: sourced by every command (set D first). The stage is one Safari window,
+# remembered by ID when Presto creates it. Nothing else in Safari is ever touched.
+STAGE_FILE="$D/.stage_window"
+
+# Prints the stage window's ID only if that window still exists, is on screen, and its
+# front tab is a page this toolkit put there. Prints nothing otherwise: voice only.
+stage_id(){
+  [ -f "$STAGE_FILE" ] || return 0
+  osascript - "$(cat "$STAGE_FILE")" "file://$D/" <<'EOS' 2>/dev/null
+on run argv
+  if application "Safari" is not running then return ""
+  tell application "Safari"
+    set wid to (item 1 of argv) as integer
+    if not (exists window id wid) then return ""
+    if not (visible of window id wid) then return ""
+    set u to URL of current tab of window id wid
+    if u starts with (item 2 of argv) then return wid
+    if u starts with "file://" and u contains "?pdk=" then return wid
+  end tell
+  return ""
+end run
+EOS
+}
+
+# Closes toolkit pages in the stage window only. Second argument "keep" spares its front tab.
+# Tabs you opened yourself are never closed. Prints how many were closed.
+stage_close(){
+  [ -f "$STAGE_FILE" ] || { echo 0; return 0; }
+  osascript - "$(cat "$STAGE_FILE")" "file://$D/" "$1" <<'EOS' 2>/dev/null
+on run argv
+  if application "Safari" is not running then return 0
+  set closed to 0
+  tell application "Safari"
+    set wid to (item 1 of argv) as integer
+    if not (exists window id wid) then return 0
+    set kept to 0
+    if (item 3 of argv) is "keep" then set kept to index of current tab of window id wid
+    repeat with i from (count of tabs of window id wid) to 1 by -1
+      try
+        set u to URL of tab i of window id wid
+        if i is not kept and (u starts with (item 2 of argv) or (u starts with "file://" and u contains "?pdk=")) then
+          close tab i of window id wid
+          set closed to closed + 1
+        end if
+      end try
+    end repeat
+  end tell
+  return closed
+end run
+EOS
+}
+
+# The spoken headlines of a report, one per line.
+headlines(){
+  perl -0ne 'while(/<figure[^>]*?\sdata-say="([^"]*)"/g){my $s=$1;
+    $s=~s/&#x27;|&#39;/\x27/g;$s=~s/&quot;/"/g;$s=~s/&lt;/</g;$s=~s/&gt;/>/g;$s=~s/&amp;/&/g;print "$s\n"}' "$1"
+}

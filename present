@@ -1,0 +1,59 @@
+#!/bin/bash
+# present: show each <figure data-say="..."> of an HTML report full-screen, one at a time,
+# speaking its headline as it appears. Charts are reused as-is (no redrawing).
+#   present report.html [seconds_min_per_slide]
+D="$(cd "$(dirname "$0")" && pwd)"; REPORT="$1"; MIN="${2:-4}"; OUT="$D/presenter.html"
+ms(){ perl -MTime::HiRes=time -e 'printf "%d", time*1000'; }
+t0=$(ms)
+. "$D/stage.sh"
+WID=$(stage_id)
+[ -n "$WID" ] || { echo "stage is off: say Presto first"; exit 0; }
+# 1. Read the report: pull out each figure's SVG and its spoken line.
+perl -0ne 'my $i=0; while(/<figure data-say="([^"]*)"[^>]*>(.*?)<figcaption/sg){ my($s,$g)=($1,$2);
+  print STDERR "$s\n"; print "<div class=\"sl\" id=\"s$i\">$g</div>"; $i++ }' "$REPORT" > "$D/.slides" 2> "$D/.says"
+N=$(wc -l < "$D/.says" | tr -d ' ')
+RSTYLE=$(perl -0ne 'print $1 if /<style>(.*?)<\/style>/s' "$REPORT")
+# 2. Build the presenter: light from 07:00 to 19:00 by this laptop's clock, dark otherwise.
+cat > "$OUT" <<EOF
+<!doctype html><html><head><meta charset="utf-8"><title>presenter</title><style>$RSTYLE</style><style>
+html,body{margin:0;height:100%;overflow:hidden;background:radial-gradient(circle at 0% 0%,#1e1f23 0%,#0c0c0e 55%,#000 100%) fixed;max-width:none;padding:0}
+.sl svg{border:0!important;border-radius:0!important}
+.sl{position:fixed;inset:0;opacity:0;transition:opacity .35s ease}.sl.on{opacity:1}.sl svg{width:100vw;height:100vh;display:block}
+.bg{fill:#fff}.ink{fill:#1a1a1a}.mut{fill:#6b7280}.grid{stroke:#e5e7eb}.axis{stroke:#9aa0a6}.acc{fill:#1f6feb}.rest{fill:#c4c9d0}
+.red{fill:#d1242f}.redS{stroke:#d1242f}.lim{stroke:#c77700}.limT{fill:#c77700}.p0{fill:#1f6feb}.p1{fill:#5b93f0}.p2{fill:#93b8f5}.p3{fill:#c3d7fa}.p4{fill:#e3ecfc}.sep{stroke:#fff}
+.dark .bg{fill:transparent}.dark .ink{fill:#f1f3f5}.dark .mut{fill:#9aa3ad}.dark .grid{stroke:#262b33}.dark .axis{stroke:#6b7280}.dark .acc{fill:#5aa2ff}.dark .accS{stroke:#5aa2ff}.dark .rest{fill:#4a515b}
+.dark .red{fill:#ff5c5c}.dark .redS{stroke:#ff5c5c}.dark .lim{stroke:#f5b544}.dark .limT{fill:#f5b544}.dark .sep{stroke:#000}
+.dark .p0{fill:#5aa2ff}.dark .p1{fill:#3f7cd0}.dark .p2{fill:#2c5a96}.dark .p3{fill:#203f68}.dark .p4{fill:#172b45}
+</style></head><body>$(cat "$D/.slides")<script>
+function isDay(d){var h=d.getHours();return h>=7&&h<19;}
+function theme(){document.body.className=isDay(new Date())?'':'dark';}
+function show(){var i=+(location.hash.slice(1)||0);[].forEach.call(document.querySelectorAll('.sl'),function(e,k){e.className='sl'+(k===i?' on':'');});}
+theme();setInterval(theme,60000);window.addEventListener('hashchange',show);show();
+</script></body></html>
+EOF
+t1=$(ms)
+# 3. Open it, then step through: change slide, speak its line (speech sets the pace).
+osascript - "file://$OUT#0" "$WID" <<'EOS' >/dev/null
+on run argv
+  tell application "Safari"
+    set wid to (item 2 of argv) as integer
+    set URL of current tab of window id wid to (item 1 of argv)
+    set index of window id wid to 1
+    activate
+  end tell
+end run
+EOS
+t2=$(ms)
+echo "$(date '+%F %T') {\"mode\":\"present\",\"report\":\"$(basename "$REPORT")\",\"slides\":$N,\"read_build_ms\":$((t1-t0)),\"first_slide_ms\":$((t2-t0))}" >> "$D/runs.jsonl"
+(
+  i=0
+  while IFS= read -r line; do
+    if [ $i -gt 0 ]; then
+      osascript -e "tell application \"Safari\" to set URL of current tab of (first window whose URL of current tab contains \"presenter.html\") to \"file://$OUT#$i\"" >/dev/null 2>&1
+    fi
+    s0=$(ms); say -v Daniel -r 185 "$line"; el=$(( $(ms) - s0 ))
+    rest=$(( MIN*1000 - el )); [ $rest -gt 0 ] && sleep $(perl -e "print $rest/1000")
+    i=$((i+1))
+  done < "$D/.says"
+) >/dev/null 2>&1 &
+echo "{\"slides\":$N,\"read_build_ms\":$((t1-t0)),\"first_slide_ms\":$((t2-t0))}"

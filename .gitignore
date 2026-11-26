@@ -1,0 +1,15 @@
+# Personal state and logs written while running: never commit these.
+runs.jsonl
+voice.json
+presenter.html
+.last
+.says
+.screen
+.slides
+.stage_window
+.presto_on
+.caffeinate.pid
+backup-*/
+.claude/
+.DS_Store
+__pycache__/
