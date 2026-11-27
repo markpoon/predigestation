@@ -22,19 +22,19 @@ cd predigestation
 ```
 
 ```bash
-./presto
+scripts/presto
 ```
 
 ```bash
-./behold incident report
+scripts/behold incident report
 ```
 
 ```bash
-./go next
+scripts/go next
 ```
 
 ```bash
-./presto
+scripts/presto
 ```
 
 The first `presto` opens the stage and the last one closes it. `incident-report.html` is a sample with invented data.
@@ -44,7 +44,7 @@ The first `presto` opens the stage and the last one closes it. `incident-report.
 | Command | What it does |
 |---|---|
 | `presto` | Toggle the stage. On: opens a new Safari window and keeps the Mac awake (up to 3 hours). Off: speaks a sign-off and closes the stage's pages. |
-| `behold <words or path>` | Finds a report in `~/Downloads` (or `*report*.html` in this folder), opens it on the stage, frames the first chart and speaks its headline. |
+| `behold <words or path>` | Finds a report in `~/Downloads` (or `*report*.html` in the scripts folder), opens it on the stage, frames the first chart and speaks its headline. |
 | `go next\|back\|first\|last\|3\|-2\|<words>` | Moves to another chart. |
 | `speak "<line>"` | Says a line, flashing each word on the stage. |
 | `pd "<headline>" "c=bar&s=Cups~5,3&x=Latte,Mocha"` | Draws a live `bar`, `line` or `big` chart from data and says the headline. |

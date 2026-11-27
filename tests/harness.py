@@ -11,7 +11,7 @@ import subprocess
 import tempfile
 import time
 
-SRC = pathlib.Path(os.environ.get("PD_SRC", pathlib.Path(__file__).resolve().parent.parent))
+SRC = pathlib.Path(os.environ.get("PD_SRC", pathlib.Path(__file__).resolve().parent.parent / "scripts"))
 TOOLS = ["presto", "behold", "go", "speak", "tidy", "pd", "present", "stage.sh",
          "nav.js", "stage.html", "stage2.html", "voice.pl", "gen_report.py"]
 
