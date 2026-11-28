@@ -44,18 +44,19 @@ The first `presto` opens the stage and the last one closes it. `incident-report.
 | Command | What it does |
 |---|---|
 | `presto` | Toggle the stage. On: opens a new Safari window and keeps the Mac awake (up to 3 hours). Off: speaks a sign-off and closes the stage's pages. |
-| `behold <words or path>` | Finds a report in `~/Downloads` (or `*report*.html` in the scripts folder), opens it on the stage, frames the first chart and speaks its headline. |
+| `abra` | Same as `presto`, and says "cadabra" when it loads the stage. |
+| `behold <words or path>` | Finds a report in `~/Downloads` (or `*report*.html` in the scripts folder), turns the stage on if needed, opens the report there, frames the first chart and speaks its headline. |
 | `go next\|back\|first\|last\|3\|-2\|<words>` | Moves to another chart. |
 | `speak "<line>"` | Says a line, flashing each word on the stage. |
 | `pd "<headline>" "c=bar&s=Cups~5,3&x=Latte,Mocha"` | Draws a live `bar`, `line` or `big` chart from data and says the headline. |
-| `present <report.html> [seconds]` | Steps through every chart on its own. |
+| `present <report.html> [seconds]` | Turns the stage on if needed and steps through every chart on its own. |
 | `tidy` | Closes extra toolkit pages in the stage window and clears scratch files. |
 | `python3 gen_report.py` | Rebuilds the sample report. |
 
 ## Safety rules
 
-- Commands act **only on the stage window** Presto created, remembered by its ID.
-- If the stage is off, closed, or showing a page the toolkit did not open, commands are **voice only** (`behold` and `go` still speak headlines; `present` does nothing).
+- Commands act **only on a stage window** the toolkit created, remembered by its ID.
+- If the stage is off, closed, or showing a page the toolkit did not open, `behold` and `present` open a new stage (once they have found something to show) and the other commands are **voice only**.
 - Closing only touches toolkit pages inside the stage window. Your own tabs are left alone.
 - `behold` opens a document only if it matches **more than half** of the meaningful words you asked for. Otherwise it says `no document found`.
 
@@ -87,7 +88,7 @@ PD_LIVE=1 python3 -m unittest discover -s tests
 
 ## Not built yet
 
-Spoken commands, highlighting ("notice / highlight / flag"), spotlight zoom, lowering music volume while speaking, and packaging as a plugin. Windows is not supported.
+Spoken commands, highlighting ("notice / highlight / flag"), spotlight zoom, and lowering music volume while speaking. Windows is not supported.
 
 ## License
 

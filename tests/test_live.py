@@ -83,7 +83,7 @@ class Live(unittest.TestCase):
 
     def test_commands_leave_your_front_tab_alone_when_stage_off(self):
         wid, was = self.decoy()
-        for cmd in (("speak", "Hi"), ("behold", "coffee report"), ("go", "next"), ("pd", "Hi"), ("tidy",)):
+        for cmd in (("speak", "Hi"), ("go", "next"), ("pd", "Hi"), ("tidy",)):
             self.box.run(*cmd)
             self.assertEqual(urls(wid), was, cmd)
 
@@ -107,15 +107,19 @@ class Live(unittest.TestCase):
         r = self.box.run("go", "next")
         self.assertIn("slide 3: 8 am", r.stdout, r.stdout + r.stderr)
 
-    def test_closed_stage_means_voice_only(self):
+    def test_closed_stage_means_voice_only_except_behold(self):
         stage = self.stage()
         close(stage)
         wid, was = self.decoy()
         count = len(window_ids())
-        for cmd in (("speak", "Hi"), ("behold", "coffee report"), ("go", "next"), ("pd", "Hi")):
+        for cmd in (("speak", "Hi"), ("go", "next"), ("pd", "Hi")):
             self.box.run(*cmd)
             self.assertEqual(urls(wid), was, cmd)
             self.assertEqual(len(window_ids()), count, cmd)
+        r = self.box.run("behold", "coffee report")
+        self.assertIn("chart 1 of 3", r.stdout, r.stdout + r.stderr)
+        self.assertEqual(urls(wid), was)
+        self.assertEqual(len(window_ids()), count + 1)
 
     def test_stage_window_browsed_elsewhere_is_left_alone(self):
         stage = self.stage()

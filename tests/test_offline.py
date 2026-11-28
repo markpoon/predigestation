@@ -31,31 +31,86 @@ class StageOff(Base):
         self.assertIn("Big number", self.box.read(self.box.said))
         self.assertSafariUntouched()
 
-    def test_behold_speaks_first_headline(self):
+    def test_behold_speaks_first_headline_if_no_stage_can_open(self):
         r = self.box.run("behold", "coffee report")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("Weekend sales nearly doubled", self.box.read(self.box.said))
-        self.assertSafariUntouched()
 
     def test_go_moves_by_number_and_step(self):
-        self.box.run("behold", "coffee report")
+        report = self.box.downloads / "coffee-report.html"
+        (self.box.d / ".last").write_text(f"{report}|0\n")
         self.box.run("go", "next")
         self.box.run("go", "3")
         self.box.run("go", "back")
         said = self.box.read(self.box.said).splitlines()
         self.assertEqual([s.split("185 ")[1] for s in said],
-                         ["Weekend sales nearly doubled", "Lattes were the favourite drink",
+                         ["Lattes were the favourite drink",
                           "8 am is the morning rush", "Lattes were the favourite drink"])
-        self.assertSafariUntouched()
-
-    def test_present_does_not_open_anything(self):
-        r = self.box.run("present", str(self.box.downloads / "coffee-report.html"), "0")
-        self.assertIn("stage is off", r.stdout)
         self.assertSafariUntouched()
 
     def test_tidy_does_nothing_to_safari(self):
         self.box.run("tidy")
         self.assertSafariUntouched()
+
+
+class StartingTheStage(Base):
+    """behold and present turn the stage on themselves; abra is presto with a spoken reply."""
+
+    def setUp(self):
+        super().setUp()
+        self.box.fake_stage()
+        self.report = str(self.box.downloads / "coffee-report.html")
+
+    def said(self):
+        return self.box.read(self.box.said)
+
+    def test_behold_turns_the_stage_on(self):
+        self.box.run("behold", "coffee report")
+        self.assertEqual(self.box.stages_opened(), 1)
+        self.assertTrue((self.box.d / ".presto_on").exists())
+        self.assertNotIn("cadabra", self.said())
+
+    def test_present_turns_the_stage_on(self):
+        r = self.box.run("present", self.report, "0")
+        self.assertEqual(self.box.stages_opened(), 1, r.stdout + r.stderr)
+        self.assertIn('"slides":3', r.stdout)
+
+    def test_open_stage_is_reused(self):
+        self.box.run("presto")
+        self.box.run("behold", "coffee report")
+        self.box.run("present", self.report, "0")
+        self.assertEqual(self.box.stages_opened(), 1)
+
+    def test_closed_stage_is_reopened_not_toggled_off(self):
+        self.box.run("presto")
+        (self.box.root / "stage.up").unlink()
+        self.box.run("behold", "coffee report")
+        self.assertEqual(self.box.stages_opened(), 2)
+        self.assertTrue((self.box.d / ".presto_on").exists())
+
+    def test_refused_request_opens_nothing(self):
+        self.box.run("behold", "zebra budget")
+        self.box.run("present", "/nowhere/zebra.html")
+        empty = self.box.add_report("empty.html", "Empty", [])
+        self.box.run("present", str(empty))
+        self.assertEqual(self.box.stages_opened(), 0)
+
+    def test_abra_turns_the_stage_on_and_says_cadabra(self):
+        r = self.box.run("abra")
+        self.assertEqual(r.stdout.strip(), "on", r.stdout + r.stderr)
+        self.assertEqual(self.box.stages_opened(), 1)
+        self.assertIn("cadabra", self.said())
+
+    def test_abra_again_turns_the_stage_off(self):
+        self.box.run("abra")
+        r = self.box.run("abra")
+        self.assertTrue(r.stdout.startswith("off"), r.stdout + r.stderr)
+        self.assertEqual(self.said().count("cadabra"), 1)
+        self.assertFalse((self.box.d / ".presto_on").exists())
+
+    def test_presto_does_not_say_cadabra(self):
+        self.box.run("presto")
+        self.assertNotIn("cadabra", self.said())
 
 
 class FindingDocuments(Base):

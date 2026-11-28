@@ -50,6 +50,21 @@ end run
 EOS
 }
 
+# Turns the stage on if there is no usable one, and prints its window ID (nothing if it could not open).
+# Never toggles an open stage off.
+stage_ensure(){
+  local w; w=$(stage_id)
+  if [ -z "$w" ]; then
+    # The stage was marked on but its window is gone: clear that, so presto opens rather than closes.
+    [ -f "$D/.caffeinate.pid" ] && kill "$(cat "$D/.caffeinate.pid")" 2>/dev/null
+    rm -f "$D/.presto_on" "$D/.caffeinate.pid"
+    "$D/presto" >/dev/null || return 0
+    # A new window can take a moment to report its page.
+    for _ in 1 2 3 4 5 6 7 8 9 10; do w=$(stage_id); [ -n "$w" ] && break; sleep 0.2; done
+  fi
+  echo "$w"
+}
+
 # The spoken headlines of a report, one per line.
 headlines(){
   perl -0ne 'while(/<figure[^>]*?\sdata-say="([^"]*)"/g){my $s=$1;

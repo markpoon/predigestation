@@ -1,0 +1,7 @@
+#!/bin/bash
+# abra: presto under another name. When it loads the stage it also says "cadabra".
+D="$(cd "$(dirname "$0")" && pwd)"
+R=$("$D/presto") || { echo "$R"; exit 1; }
+echo "$R"
+[ "$R" = on ] && ( sleep 0.5; say -v Daniel -r 185 "cadabra" >/dev/null 2>&1 & )
+exit 0
