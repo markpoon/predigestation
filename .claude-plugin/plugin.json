@@ -2,8 +2,22 @@
   "name": "predigestation",
   "version": "0.1.0",
   "description": "Turns data and reports into quick, plain visuals and speech on a full-screen stage, for people who aren't technical. macOS only.",
-  "author": { "name": "Mark Poon", "url": "https://github.com/markpoon" },
+  "author": {
+    "name": "Mark Poon",
+    "url": "https://github.com/markpoon"
+  },
   "repository": "https://github.com/markpoon/predigestation",
   "license": "MIT",
-  "keywords": ["presentation", "visualization", "reports", "speech", "macos"]
+  "keywords": [
+    "presentation",
+    "visualization",
+    "reports",
+    "speech",
+    "macos"
+  ],
+  "homepage": "https://github.com/markpoon/predigestation",
+  "icon": "./.claude-plugin/icon.png",
+  "documentationUrl": "https://github.com/markpoon/predigestation#readme",
+  "supportUrl": "https://github.com/markpoon/predigestation/issues",
+  "privacyPolicyUrl": "https://github.com/markpoon/predigestation/blob/main/PRIVACY.md"
 }
