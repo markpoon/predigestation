@@ -12,7 +12,7 @@ import tempfile
 import time
 
 SRC = pathlib.Path(os.environ.get("PD_SRC", pathlib.Path(__file__).resolve().parent.parent / "scripts"))
-TOOLS = ["presto", "abra", "behold", "go", "speak", "tidy", "pd", "present", "stage.sh",
+TOOLS = ["presto", "abra", "reply", "interject", "behold", "go", "speak", "tidy", "pd", "present", "stage.sh",
          "nav.js", "stage.html", "stage2.html", "voice.pl", "gen_report.py"]
 
 
@@ -54,6 +54,7 @@ echo "ARGS $*" >> "{self.calls}"; echo "$S $*" >> "{self.calls}"
 case "$S" in
   *"make new document"*) touch "{up}"; echo 42;;
   *"then return wid"*) [ -f "{up}" ] && echo 42;;
+  *"reply: front page"*) cat "{self.root}/tab.url" 2>/dev/null;;
 esac
 exit 0''')
 

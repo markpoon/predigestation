@@ -1,0 +1,11 @@
+#!/bin/bash
+# interject [on|off]: may spoken replies interrupt a presentation? On unless you turn it off.
+D="$(cd "$(dirname "$0")" && pwd)"; F="$D/.quiet_in_present"
+case "$1" in
+  on) rm -f "$F";;
+  off) touch "$F";;
+  "") if [ -f "$F" ]; then rm -f "$F"; else touch "$F"; fi;;
+  *) echo "use: interject [on|off]"; exit 1;;
+esac
+if [ -f "$F" ]; then echo "off: replies stay quiet while a presentation plays"
+else echo "on: replies are spoken, even while a presentation plays"; fi

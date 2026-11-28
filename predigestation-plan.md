@@ -4,6 +4,8 @@ Turn data into a show for people who aren't technical, live in a meeting, by voi
 Built and rehearsed on a Mac on Nov 25 to 26, 2026. Status: working prototype; items under "Next" are not built yet.
 Updated Nov 26: code now lives only in `~/Code/predigestation`; the wrong-tab, wrong-document and tab-closing risks are fixed and tested.
 
+Updated Nov 27: packaged as a Claude Code plugin; `behold` and `present` start the stage themselves; `abra`, `reply` and `interject` added; stage words are in capitals and lead the voice by 0.15 s. See the [README](README.md).
+
 ## 1. Principles
 
 - **Speed first.** Latency is the worst thing. Sacrifice picture quality before speed.
@@ -19,7 +21,8 @@ Updated Nov 26: code now lives only in `~/Code/predigestation`; the wrong-tab, w
 |---|---|---|
 | **Presto** | Toggle. On: one stage to the front, full screen, Mac kept awake, silent. Off: a sign-off from context ("That was the coffee report. Good night."), every stage closed, Mac allowed to sleep, focus back to Claude | On 0.45 to 0.9 s |
 | **Behold** + document | Finds it (in Downloads; must match more than half the words asked for), opens the document itself in Safari, frames the first chart, speaks its headline | 0.3 to 0.45 s |
-| (with the stage off or closed) | `behold` and `go` speak headlines only; Safari is not touched | |
+| (with the stage off or closed) | `behold` and `present` open a stage; `go`, `speak` and `pd` are voice only | |
+| **Abra** | Presto that says "cadabra"; in Claude Code, replies are then spoken | |
 | next, back, first, last, a number, "2 slides ago", or a description ("the one about how people paid") | Moves to that chart; remembers the place across stage detours | about 0.2 s |
 | **notice / highlight / flag** + a thing, in a normal sentence (not in the code yet) | Outlines that bar or slice in gold, dims the rest, speaks a line | about 0.7 to 1.1 s |
 | Spotlight (trigger word still to choose) | Zooms into one part of a chart | |
@@ -31,7 +34,7 @@ Timings are Mac side only: from the command starting to the screen changing. The
 ## 3. How it looks
 
 - Voice: macOS Daniel, 185 words per minute, short pauses. Planned (not in the code yet): Music ducks to 15% while speaking and is restored, even if speech fails.
-- Type: Helvetica Neue, bold for flashed words.
+- Type: Helvetica Neue bold. Flashed words are in capitals without punctuation (`speak`), and appear 0.15 s ahead of the voice.
 - Background, night (19:00 to 07:00, by the laptop's own clock): a dark gradient glowing from the top left, more black than grey.
 - Background, day: a light gradient glowing from the top right, with dark text.
 - When a reply offers a list, the spoken line ends by asking about the first item. Speech only, never on screen or in reports.
@@ -70,7 +73,7 @@ Agents, background only: Scout helpers for ad hoc fetches; Skeptic after the fac
 
 ## 8. Files (`~/Code/predigestation/`)
 
-`presto`, `behold`, `go`, `speak`, `tidy`, `present`, `stage.sh` (stage-window guard), `tests/`, `voice.pl` (timing model), `nav.js` (camera and navigation), `stage.html` (word flash), `stage2.html` (live charts and big numbers), `pd` (live chart command), `runs.jsonl` (log), `gen_report.py` (report builder). Sample: `~/Downloads/coffee-report.html`.
+In `scripts/`: `presto`, `abra`, `behold`, `go`, `speak`, `reply`, `interject`, `tidy`, `present`, `stage.sh` (stage-window guard), `voice.pl` (timing model), `nav.js` (camera and navigation), `stage.html` (word flash), `stage2.html` (live charts and big numbers), `pd` (live chart command), `runs.jsonl` (log), `gen_report.py` (report builder). Sample: `scripts/incident-report.html`. Slash commands are in `commands/`, tests in `tests/`.
 
 ## 9. Known traps (from rehearsal)
 
@@ -79,6 +82,8 @@ Agents, background only: Scout helpers for ad hoc fetches; Skeptic after the fac
 - Phrases starting with a number ("8 am rush") were read as slide numbers: fixed.
 - Talking to a page before the new one has loaded: always wait for the right page.
 - Measuring under page zoom double-counted the zoom: trust screenshots over that math.
+- Not yet fixed: `presto` stretches a window rather than using true full screen, and toggles off even if its window was already closed.
+- Not yet fixed: word timing is estimated per line, so words can trail the voice on long lines.
 - Keystrokes and menu clicks are blocked (no Accessibility permission for osascript).
 - Fixed: commands used to act on Safari's front tab and could land on your own tabs. They now act only on the stage window (`stage.sh`).
 - Asking Finder for the screen size stalls while the display is asleep: only Presto asks, once, with a 5 s limit.
@@ -88,7 +93,7 @@ Agents, background only: Scout helpers for ad hoc fetches; Skeptic after the fac
 
 1. **Mac voice commands:** Voice Control plus Shortcuts run `go`, `behold` and `presto` directly; simple commands in under 0.5 s with no model involved. Biggest speed win.
 2. **Meeting session kit:** a short fresh session with only the plugin loaded, and a fixed phrase table, so Claude acts rather than reasons. Optionally a faster model chosen by Mark in the model picker.
-3. **Safety fix: done (Nov 26).** Presto saves the stage window's ID; every command acts only on that window. With the stage off or missing, voice only.
+3. **Safety fix: done (Nov 26).** Presto saves the stage window's ID; every command acts only on that window. With the stage off or missing, voice only (changed Nov 27 for `behold` and `present`, which open a stage).
 4. **Spotlight trigger word.**
-5. **Package as a plugin:** skill files from section 7, reviewed by Oracle.
+5. **Plugin:** slash commands done (Nov 27). The skills in section 7 are not written yet.
 6. Later: Windows (David or Mark voices, PowerShell).

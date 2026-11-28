@@ -1,0 +1,41 @@
+#!/bin/bash
+# reply: say an answer out loud without covering what is on the stage.
+#   word page (or no stage)  -> speak: words flash as they are said
+#   report or presentation   -> voice only, after the current line; a presentation waits meanwhile
+# During a presentation it stays quiet if interject is off.
+D="$(cd "$(dirname "$0")" && pwd)"; TXT="$*"
+. "$D/stage.sh"
+LIVE=""; [ -f "$D/.presenting" ] && kill -0 "$(cat "$D/.presenting")" 2>/dev/null && LIVE=1
+if [ -n "$LIVE" ] && [ -f "$D/.quiet_in_present" ]; then echo "quiet: a presentation is playing"; exit 0; fi
+WID=$(stage_id); PAGE=""
+if [ -n "$WID" ]; then
+  PAGE=$(osascript - "$WID" <<'EOS' 2>/dev/null
+on run argv
+  -- reply: front page
+  tell application "Safari" to return URL of current tab of window id ((item 1 of argv) as integer)
+end run
+EOS
+)
+fi
+# Bring the stage to the front first, so the words and charts are what is being looked at.
+if [ -n "$WID" ]; then
+  osascript - "$WID" <<'EOS' >/dev/null 2>&1
+on run argv
+  -- reply: focus stage
+  tell application "Safari"
+    set index of window id ((item 1 of argv) as integer) to 1
+    activate
+  end tell
+end run
+EOS
+fi
+case "$PAGE" in
+  ""|"file://"*/stage.html*|"file://"*/stage2.html*) [ -z "$LIVE" ] && exec "$D/speak" "$TXT";;
+esac
+touch "$D/.interjecting"   # a presentation holds its next slide until this is gone
+(
+  trap 'rm -f "$D/.interjecting"' EXIT
+  for _ in $(seq 150); do pgrep -x say >/dev/null 2>&1 || break; sleep 0.2; done
+  say -v Daniel -r 185 "$TXT"
+) >/dev/null 2>&1 &
+echo "voice only"

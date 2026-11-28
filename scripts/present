@@ -49,14 +49,18 @@ EOS
 t2=$(ms)
 echo "$(date '+%F %T') {\"mode\":\"present\",\"report\":\"$(basename "$REPORT")\",\"slides\":$N,\"read_build_ms\":$((t1-t0)),\"first_slide_ms\":$((t2-t0))}" >> "$D/runs.jsonl"
 (
+  trap 'rm -f "$D/.presenting"' EXIT
   i=0
   while IFS= read -r line; do
+    # Wait while reply is speaking (a minute at most, in case it was cut off).
+    for _ in $(seq 300); do [ -f "$D/.interjecting" ] || break; sleep 0.2; done
     if [ $i -gt 0 ]; then
-      osascript -e "tell application \"Safari\" to set URL of current tab of (first window whose URL of current tab contains \"presenter.html\") to \"file://$OUT#$i\"" >/dev/null 2>&1
+      osascript -e "tell application \"Safari\" to set URL of current tab of (first window whose URL of current tab contains \"presenter.html\") to \"file://$OUT#$i\"" </dev/null >/dev/null 2>&1
     fi
     s0=$(ms); say -v Daniel -r 185 "$line"; el=$(( $(ms) - s0 ))
     rest=$(( MIN*1000 - el )); [ $rest -gt 0 ] && sleep $(perl -e "print $rest/1000")
     i=$((i+1))
   done < "$D/.says"
 ) >/dev/null 2>&1 &
+echo $! > "$D/.presenting"
 echo "{\"slides\":$N,\"read_build_ms\":$((t1-t0)),\"first_slide_ms\":$((t2-t0))}"
