@@ -8,6 +8,9 @@ presenter.html
 .slides
 .stage_window
 .presto_on
+.presenting
+.interjecting
+.quiet_in_present
 .caffeinate.pid
 backup-*/
 .claude/

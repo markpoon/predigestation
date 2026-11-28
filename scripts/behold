@@ -28,13 +28,13 @@ if [ -f "$A" ]; then F="$A"; else
 fi
 [ -z "$F" ] && { echo "no document found for: $A"; exit 1; }
 killall say >/dev/null 2>&1
-WID=$(stage_id)
-if [ -z "$WID" ]; then   # stage off or gone: voice only
+WID=$(stage_ensure)
+if [ -z "$WID" ]; then   # the stage could not open: voice only
   S=$(headlines "$F" | head -1)
   echo "$F|0" > "$D/.last"
   [ -n "$S" ] && ( say -v Daniel -r 185 "$S" >/dev/null 2>&1 & )
   echo "$(date '+%F %T') {\"mode\":\"behold\",\"doc\":\"$(basename "$F")\",\"voice_only\":true}" >> "$D/runs.jsonl"
-  echo "$(basename "$F"): stage is off, voice only: $S"
+  echo "$(basename "$F"): could not open the stage, voice only: $S"
   exit 0
 fi
 TOK=$(ms)

@@ -1,0 +1,9 @@
+{
+  "name": "predigestation",
+  "version": "0.1.0",
+  "description": "Turns data and reports into quick, plain visuals and speech on a full-screen stage, for people who aren't technical. macOS only.",
+  "author": { "name": "Mark Poon", "url": "https://github.com/markpoon" },
+  "repository": "https://github.com/markpoon/predigestation",
+  "license": "MIT",
+  "keywords": ["presentation", "visualization", "reports", "speech", "macos"]
+}

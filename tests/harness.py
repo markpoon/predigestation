@@ -11,8 +11,8 @@ import subprocess
 import tempfile
 import time
 
-SRC = pathlib.Path(os.environ.get("PD_SRC", pathlib.Path(__file__).resolve().parent.parent))
-TOOLS = ["presto", "behold", "go", "speak", "tidy", "pd", "present", "stage.sh",
+SRC = pathlib.Path(os.environ.get("PD_SRC", pathlib.Path(__file__).resolve().parent.parent / "scripts"))
+TOOLS = ["presto", "abra", "reply", "interject", "behold", "go", "speak", "tidy", "pd", "present", "stage.sh",
          "nav.js", "stage.html", "stage2.html", "voice.pl", "gen_report.py"]
 
 
@@ -45,6 +45,21 @@ class Sandbox:
         self._fake("afinfo", "exit 0")
         if fake_osascript:
             self._fake("osascript", f'{{ echo "ARGS $*"; [ -t 0 ] || cat; }} >> "{self.calls}"')
+
+    def fake_stage(self):
+        """A fake Safari that can open a stage window (ID 42) and later find it again."""
+        up = self.root / "stage.up"
+        self._fake("osascript", f'''S=""; [ -t 0 ] || S=$(cat)
+echo "ARGS $*" >> "{self.calls}"; echo "$S $*" >> "{self.calls}"
+case "$S" in
+  *"make new document"*) touch "{up}"; echo 42;;
+  *"then return wid"*) [ -f "{up}" ] && echo 42;;
+  *"reply: front page"*) cat "{self.root}/tab.url" 2>/dev/null;;
+esac
+exit 0''')
+
+    def stages_opened(self):
+        return self.read(self.calls).count("make new document with")
 
     def _fake(self, name, body):
         p = self.bin / name

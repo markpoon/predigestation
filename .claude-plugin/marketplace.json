@@ -1,0 +1,11 @@
+{
+  "name": "predigestation",
+  "owner": { "name": "Mark Poon", "url": "https://github.com/markpoon" },
+  "plugins": [
+    {
+      "name": "predigestation",
+      "source": "./",
+      "description": "Turns data and reports into quick, plain visuals and speech on a full-screen stage. macOS only."
+    }
+  ]
+}
