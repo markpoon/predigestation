@@ -74,6 +74,40 @@ Claude writes its reply as usual and also says it, in a warm, social tone. The s
 
 `/presto` does not make Claude speak. Turn the stage off to stop.
 
+## Examples
+
+Type these in Claude Code:
+
+1. `/behold incident report` opens the bundled sample report, frames its first chart and speaks the headline. Then `/go next` moves on.
+2. `/present ~/Downloads/sales-report.html 6` runs every chart in your own report as spoken slides.
+3. `/abra`, then ask "what stands out in this report?" Claude answers aloud and in writing. Run `/abra` again to stop.
+
+Your own report needs the format described under [Report format](#report-format).
+
+## What it does on your Mac
+
+Everything runs locally; the scripts make no network requests. See [PRIVACY.md](PRIVACY.md).
+
+- Opens, resizes and closes its own Safari window, and runs JavaScript in it
+- Asks Finder for the desktop size, and brings the Claude app forward when the stage closes
+- Speaks with the macOS `say` command and stops other `say` speech when opening a report
+- Keeps the Mac awake with `caffeinate` while the stage is on (up to 3 hours)
+- Reads names and titles of HTML files in `~/Downloads` when you use `behold`
+- Writes logs and state files in its own `scripts/` folder, and removes its scratch files from `/tmp`
+- `/abra`, `/presto` and `/interject` let their own scripts run without a permission prompt
+
+## Troubleshooting
+
+| Problem | Try |
+|---|---|
+| `could not open the stage` | Allow your terminal to control Safari and Finder in System Settings, Privacy & Security, Automation. |
+| Charts do not move | Turn on **Allow JavaScript from Apple Events** in Safari's Develop menu. |
+| `/presto` says off when no stage is visible | The window was closed by hand. Run it again. |
+| `no document found` | Use more words from the file name, or give the full path. |
+| No sound | Check the volume and that the "Daniel" voice is installed. |
+
+Questions and bugs: [open an issue](https://github.com/markpoon/predigestation/issues).
+
 ## Commands
 
 The scripts behind the slash commands are in `scripts/`.

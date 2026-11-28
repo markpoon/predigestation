@@ -1,5 +1,6 @@
 {
   "name": "predigestation",
+  "description": "Plugins for showing and speaking reports on a Mac.",
   "owner": { "name": "Mark Poon", "url": "https://github.com/markpoon" },
   "plugins": [
     {
